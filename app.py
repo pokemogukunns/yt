@@ -31,22 +31,31 @@ def extract():
 
         html_content = response.text
 
-        # "url"部分を抽出
-        url_match = re.search(r'"itag":136,"url":"(https://[^"]+)"', html_content)
-        if not url_match:
-            return "URLが見つかりませんでした"
+        # ytInitialPlayerResponseを抽出
+        match = re.search(r'ytInitialPlayerResponse\s*=\s*({.*?});', html_content)
+        if not match:
+            return "ytInitialPlayerResponseが見つかりませんでした"
 
-        raw_url = url_match.group(1)
+        yt_initial_data = json.loads(match.group(1))
 
-        # エスケープ文字 (\u0026 など) をデコード
-        decoded_url = raw_url.encode('utf-8').decode('unicode_escape')
+        # 全フォーマットを取得して表示
+        streaming_data = yt_initial_data.get('streamingData', {})
+        formats = streaming_data.get('formats', []) + streaming_data.get('adaptiveFormats', [])
 
-        # 必要ならクエリ部分をデコード
-        full_url = urllib.parse.unquote(decoded_url)
+        if not formats:
+            return "利用可能なフォーマットが見つかりませんでした"
 
-        return f"<h2>抽出されたURL:</h2><p><a href='{full_url}' target='_blank'>{full_url}</a></p>"
+        # 利用可能なすべてのURLを表示
+        all_urls = []
+        for fmt in formats:
+            itag = fmt.get('itag')
+            url = fmt.get('url', "URLがありません")
+            all_urls.append(f"itag: {itag} -> URL: {url}")
+
+        return f"<h2>利用可能なフォーマットとURL:</h2><pre>{'<br>'.join(all_urls)}</pre>"
     except Exception as e:
         return f"エラーが発生しました: {str(e)}"
+
 
 if __name__ == '__main__':
     app.run(debug=True)
