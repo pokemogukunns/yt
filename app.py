@@ -18,7 +18,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # ローカルでの認証に�
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
 # GoogleのクライアントIDとクライアントシークレットが含まれるJSONファイル
-CLIENT_SECRET_FILE = 'YOUR_CLIENT_SECRET_FILE.json'
+CLIENT_SECRET_FILE = 'client_secret_844740267850-ohtpph0tsrasqpqhvb1sank2im7uali8.apps.googleusercontent.com.json'
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
 
