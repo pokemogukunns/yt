@@ -25,37 +25,22 @@ def extract():
         return "URLを入力してください"
 
     try:
-        # YouTubeのHTMLを取得
         response = requests.get(youtube_url)
         if response.status_code != 200:
             return f"エラー: YouTubeページの取得に失敗しました (ステータスコード: {response.status_code})"
 
         html_content = response.text
 
-        # ytInitialPlayerResponseを抽出
         match = re.search(r'ytInitialPlayerResponse\s*=\s*({.*?});', html_content)
         if not match:
             return "ytInitialPlayerResponseが見つかりませんでした"
 
+        # デバッグ用にレスポンス全体を表示
         yt_initial_data = json.loads(match.group(1))
-
-        # 全フォーマットを取得して表示
-        streaming_data = yt_initial_data.get('streamingData', {})
-        formats = streaming_data.get('formats', []) + streaming_data.get('adaptiveFormats', [])
-
-        if not formats:
-            return "利用可能なフォーマットが見つかりませんでした"
-
-        # 利用可能なすべてのURLを表示
-        all_urls = []
-        for fmt in formats:
-            itag = fmt.get('itag')
-            url = fmt.get('url', "URLがありません")
-            all_urls.append(f"itag: {itag} -> URL: {url}")
-
-        return f"<h2>利用可能なフォーマットとURL:</h2><pre>{'<br>'.join(all_urls)}</pre>"
+        return f"<h2>ytInitialPlayerResponse の内容:</h2><pre>{json.dumps(yt_initial_data, indent=4)}</pre>"
     except Exception as e:
         return f"エラーが発生しました: {str(e)}"
+
 
 
 if __name__ == '__main__':
