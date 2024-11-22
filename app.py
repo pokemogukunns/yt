@@ -1,50 +1,51 @@
-from flask import Flask, render_template, request
-import requests
-import re
-import json
+from flask import Flask, render_template, request, jsonify
+import yt_dlp
 
 app = Flask(__name__)
 
 @app.route('/home')
 def home():
     return '''
-        <h1>YouTube URL解析ツール</h1>
-        <form method="post" action="/extract">
+        <h1>ストリームURL取得ツール</h1>
+        <form method="post" action="/get_stream">
             <label for="youtube_url">YouTubeのURLを入力:</label><br>
             <input type="text" id="youtube_url" name="youtube_url" size="50" placeholder="https://www.youtube.com/watch?v=example"><br><br>
-            <button type="submit">解析</button>
+            <button type="submit">ストリームURL取得</button>
         </form>
     '''
 
-@app.route('/extract', methods=['POST'])
-def extract():
+@app.route('/get_stream', methods=['POST'])
+def get_stream():
     youtube_url = request.form.get('youtube_url')
 
     if not youtube_url:
         return "URLを入力してください"
 
     try:
-        # カスタムUser-Agentを指定
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        # yt-dlpを使用してストリームURLを解析
+        ydl_opts = {
+            'quiet': True,
+            'format': 'best',  # 必要に応じて品質を選択
         }
 
-        response = requests.get(youtube_url, headers=headers)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(youtube_url, download=False)
 
-        if response.status_code != 200:
-            return f"エラー: YouTubeページの取得に失敗しました (ステータスコード: {response.status_code})"
+        # 各フォーマットのストリームURLを収集
+        formats = info_dict.get('formats', [])
+        stream_urls = [
+            {
+                'format': f.get('format_note', 'N/A'),
+                'url': f.get('url')
+            }
+            for f in formats if f.get('url')
+        ]
 
-        html_content = response.text
-
-        # ytInitialPlayerResponseを取得
-        match = re.search(r'ytInitialPlayerResponse\s*=\s*({.*?});', html_content)
-        if not match:
-            return "ytInitialPlayerResponseが見つかりませんでした"
-
-        yt_initial_data = json.loads(match.group(1))
-        
-        # ytInitialPlayerResponseのデータを表示
-        return f"<h2>ytInitialPlayerResponse の内容:</h2><pre>{json.dumps(yt_initial_data, indent=4)}</pre>"
+        # 結果をJSON形式で返す
+        return jsonify({
+            'title': info_dict.get('title', 'タイトル不明'),
+            'stream_urls': stream_urls
+        })
 
     except Exception as e:
         return f"エラーが発生しました: {str(e)}"
